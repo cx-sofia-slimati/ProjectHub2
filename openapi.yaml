@@ -185,7 +185,7 @@ paths:
       tags:
         - Authentication
       summary: Reset user password
-      description: Reset password for a user. Vulnerable to broken authentication - no token validation or email verification.
+      description: Reset password for a user. Requires a valid bearer token; only the account owner or an admin may reset a password.
       operationId: resetPassword
       requestBody:
         required: true
@@ -221,8 +221,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404':
-          description: User not found
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not authorized to reset this password
           content:
             application/json:
               schema:
