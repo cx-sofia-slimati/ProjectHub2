@@ -96,20 +96,28 @@ def logout():
 
 @bp.route('/reset-password', methods=['POST'])
 def reset_password():
-    """Password reset"""
+    """Password reset (requires authentication)"""
+    # The caller must prove their identity with a valid token before any
+    # password can be changed.
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({'error': 'Authentication required'}), 401
+
     data = request.get_json() or request.form
-    
+
     email = data.get('email')
     new_password = data.get('new_password')
-    
+
     if not email or not new_password:
         return jsonify({'error': 'Email and new password required'}), 400
-    
+
     user = User.query.filter_by(email=email).first()
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+
+    # Only the account owner or an admin may reset a password. Return the same
+    # response for unknown and foreign accounts to avoid user enumeration.
+    if not user or (user.id != current_user.id and current_user.role != 'admin'):
+        return jsonify({'error': 'Not authorized to reset this password'}), 403
+
     user.set_password(new_password)
     db.session.commit()
     
